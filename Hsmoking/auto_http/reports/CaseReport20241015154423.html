@@ -1,0 +1,1310 @@
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/2122.png">
+  <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+  <title>Cats Report</title>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <style>
+    body {
+      background-color: #f2f2f2;
+      color: #333;
+      margin: 0 auto;
+      width: 960px;
+    }
+    #summary, #details {
+      width: 960px;
+    }
+    #summary th {
+      background-color: skyblue;
+      padding: 5px 12px;
+    }
+    #summary td {
+      background-color: lightblue;
+      text-align: center;
+      padding: 4px 8px;
+    }
+    #details th {
+      background-color: skyblue;
+      padding: 5px 12px;
+    }
+    #details td {
+      background-color: lightblue;
+      padding: 5px 12px;
+    }
+    #details .detail {
+      background-color: lightgrey;
+      font-size: smaller;
+      padding: 5px 10px;
+      text-align: center;
+    }
+    #details .success {
+      background-color: greenyellow;
+    }
+    #details .error {
+      background-color: red;
+    }
+    #details .failure {
+      background-color: salmon;
+    }
+    #details .skipped {
+      background-color: gray;
+    }
+
+    .button {
+      font-size: 1em;
+      padding: 6px;
+      width: 4em;
+      text-align: center;
+      background-color: #06d85f;
+      border-radius: 20px/50px;
+      cursor: pointer;
+      transition: all 0.3s ease-out;
+    }
+    a.button{
+      color: gray;
+      text-decoration: none;
+    }
+    .button:hover {
+      background: #2cffbd;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.7);
+      transition: opacity 500ms;
+      visibility: hidden;
+      opacity: 0;
+    }
+    .overlay:target {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .popup {
+      margin: 30px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 5px;
+      width: 40%;
+      position: relative;
+      transition: all 5s ease-in-out;
+    }
+
+    .popup h2 {
+      margin-top: 0;
+      color: #333;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    .popup .close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      transition: all 200ms;
+      font-size: 30px;
+      font-weight: bold;
+      text-decoration: none;
+      color: #333;
+    }
+    .popup .close:hover {
+      color: #06d85f;
+    }
+    .popup .content {
+      max-height: 30%;
+      overflow: auto;
+      text-align: left;
+    }
+
+    .line-limit-length {
+      max-width: 500px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media screen and (max-width: 700px) {
+      .box {
+        width: 70%;
+      }
+      .popup {
+        width: 70%;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <h1>Test Report: 接口测试报告</h1>
+
+  <h3>执行情况</h3>
+  <div id="container" style="height: 50%;padding-top: 20px"></div>
+
+  <script type="text/javascript">
+    var dom = document.getElementById("container");
+    var myChart = echarts.init(dom);
+    var app = {};
+
+    var option;
+    option = {
+        title: {
+            text: '测试执行情况饼图',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'item'
+        },
+        series: [
+            {
+                name: '次数',
+                type: 'pie',
+                radius: '50%',
+                data: [
+                    {value: 0, name: '成功', itemStyle: {color:'#34e25c'}},
+                    {value: 8, name: '失败', itemStyle: {color:'#ee4e43'}},
+                    {value: 0, name: '跳过', itemStyle: {color:'#9f9a9a'}}
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }
+        ]
+    };
+
+    if (option && typeof option === 'object') {
+        myChart.setOption(option);
+    }
+
+  </script>
+
+  <h3>接口响应时间</h3>
+  <div id="container_bar" style="height: 50%;width:100%;padding-top: 20px"></div>
+
+  <script type="text/javascript">
+    var dom = document.getElementById("container_bar");
+    var myChart = echarts.init(dom);
+    var app = {};
+
+    var option;
+    option = {
+      backgroundColor:'#323a5e',//背景色
+      tooltip: {
+            trigger: 'axis',
+            axisPointer: { // 坐标轴指示器，坐标轴触发有效
+              type: 'shadow' // 默认为直线，可选为：'line' | 'shadow'
+            }
+          },
+      grid: {
+          left: '10%',
+          right: '10%',
+          bottom: '20%',
+          top:'20%',
+          containLabel: true//是否包含刻度尺，默认不包含
+      },
+      legend:{//图例组件
+            data: ['录制接口', '回放接口'],
+            right: 'center',
+            top:'10%',
+            textStyle: {
+              color: "#fff"
+            },
+            itemWidth: 12,//图例组件宽度
+            itemHeight: 10,//图例组件高度
+          itemGap: 35//每项之间的间隔
+      },
+      xAxis:{
+            type: 'category',
+            data: ['https://mch.ylbhd.com/api/payOrder', 'https://mch.ylbhd.com/api/payWays', 'https://mch.ylbhd.com/api/payOrder/count', 'https://mch.ylbhd.com/api/refundOrder/count', 'https://mch.ylbhd.com/api/refundOrder', 'https://mch.ylbhd.com/api/transferOrders/count', 'https://mch.ylbhd.com/api/transferOrders/queryCountOrder', 'https://mch.ylbhd.com/api/transferOrders'],
+            axisLine: {
+              lineStyle: {
+                color: 'white'
+              }
+            },
+          },
+      yAxis:{
+          type: 'value',
+          max:'3',//纵坐标轴的最大刻度
+          axisLine: {
+              show: false,//不显示纵坐标轴
+              lineStyle: {
+                color: 'white'
+              }
+            },
+          splitLine: {
+              show: true,
+              lineStyle: {
+                color: 'rgba(255,255,255,0.3)'
+              }
+            },
+          axisLabel: {}
+      },
+      series: [
+          {
+            name: '录制接口',
+            type: 'bar',
+            barWidth: '15%',
+            itemStyle: {
+              normal: {
+                  color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                      offset: 0,
+                      color: '#fccb05'
+                  }, {
+                      offset: 1,
+                      color: '#f5804d'
+                  }]),
+                  barBorderRadius: 12,
+              },
+            },
+            data: ['0.16162', '0.17421', '0.17674', '0.15658', '0.27269', '0.14812', '0.14712', '0.16371'],
+          },
+          {
+            name: '回放接口',
+            type: 'bar',
+            barWidth: '15%',
+            itemStyle: {
+              normal: {
+                  color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                      offset: 0,
+                      color: '#8bd46e'
+                  }, {
+                      offset: 1,
+                      color: '#09bcb7'
+                  }]),
+                  barBorderRadius: 11,
+              }
+            },
+             data: [0.71341, 0.31584, 0.50344, 0.33697, 0.33695, 0.47656, 0.84735, 0.29336],
+          }],
+      dataZoom: [//滑动组件
+              {
+              type:"slider",//水平滑块，选择区间
+              show: true,
+              height: 12,
+              xAxisIndex: [0],
+              bottom:'8%',
+              start: 10,
+              end: 90,
+              handleIcon: 'path://M306.1,413c0,2.2-1.8,4-4,4h-59.8c-2.2,0-4-1.8-4-4V200.8c0-2.2,1.8-4,4-4h59.8c2.2,0,4,1.8,4,4V413z',
+              handleSize: '110%',
+              handleStyle:{
+              color:"#d3dee5",
+            },
+            textStyle:{ color:"#fff"},
+            borderColor:"#90979c"
+          },
+          {
+            type: "inside",//纵向滑动,缩放
+            show: true,
+            height: 15,
+            start: 1,
+            end: 35
+          }
+      ],
+    };
+
+    if (option && typeof option === 'object') {
+        myChart.setOption(option);
+    }
+
+
+  </script>
+
+
+  <h3>Details</h3>
+  <table class="table table-bordered table-dark">
+    <thead>
+      <tr>
+        <th scope="col">Url Name</th>
+        <th scope="col">Method</th>
+        <th scope="col">Status</th>
+        <th scope="col">Response Time</th>
+        <th scope="col">Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+    
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title=https://mch.ylbhd.com/api/payOrder><a href="#">https://mch.ylbhd.com/api/payOrder</a></p></th>
+        <td style="text-align:center;width:6em;">GET</td>
+        
+          <td style="text-align:center;width:6em;color:limegreen;">200</td>
+        
+        <td style="text-align:center;width:10em;">0.16162 ms</td>
+        <td>
+          
+            <a class="btn-group-vertical" href="#popup_log_1" style="color:red;">data</a>
+          
+            <div id="popup_log_1" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "65ad3b9737f84fdba5f3334b71cef1ed",
+    "code": 0,
+    "data": {
+        "total": 0,
+        "current": 1,
+        "records": [],
+        "hasNext": false
+    }
+}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "6d6096d7abd844998f22dcb33789a3c2",
+    "code": 0,
+    "data": {
+        "total": 0,
+        "current": 1,
+        "records": [],
+        "hasNext": false
+    }
+}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{
+    "values_changed": {
+        "root['traceId']": {
+            "new_value": "65ad3b9737f84fdba5f3334b71cef1ed",
+            "old_value": "6d6096d7abd844998f22dcb33789a3c2"
+        }
+    }
+}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title=https://mch.ylbhd.com/api/payWays><a href="#">https://mch.ylbhd.com/api/payWays</a></p></th>
+        <td style="text-align:center;width:6em;">GET</td>
+        
+          <td style="text-align:center;width:6em;color:limegreen;">200</td>
+        
+        <td style="text-align:center;width:10em;">0.17421 ms</td>
+        <td>
+          
+            <a class="btn-group-vertical" href="#popup_log_2" style="color:red;">data</a>
+          
+            <div id="popup_log_2" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "7a2546f25b96433ca2ad99d5410f80b8",
+    "code": 0,
+    "data": {
+        "total": 33,
+        "current": 1,
+        "records": [
+            {
+                "createdAt": "2024-01-29 16:32:20",
+                "wayName": "支付宝APP",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_APP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:20"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:20",
+                "wayName": "支付宝条码",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:20"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:20",
+                "wayName": "支付宝生活号",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_JSAPI",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:20"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "支付宝小程序",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_LITE",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "支付宝PC网站",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_PC",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "支付宝二维码",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_QR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-09-10 18:17:36",
+                "wayName": "支付宝口令",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_SHARE",
+                "productType": "PAY",
+                "updatedAt": "2024-09-10 18:17:36"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:20",
+                "wayName": "支付宝WAP",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_WAP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:20"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "智能POS支付",
+                "wayType": "OTHER",
+                "wayCode": "AUTO_POS",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "网银B2C",
+                "wayType": "OTHER",
+                "wayCode": "BANK_B2C",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "快捷收银",
+                "wayType": "OTHER",
+                "wayCode": "BANK_QUICK",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "渠道收银台",
+                "wayType": "OTHER",
+                "wayCode": "CHANNEL_CASHIER",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-04-01 14:29:52",
+                "wayName": "加密货币",
+                "wayType": "TTPAY",
+                "wayCode": "CRYPTO_ADDRESS",
+                "productType": "PAY",
+                "updatedAt": "2024-04-16 09:17:00"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "数字人民币条码",
+                "wayType": "DCEPPAY",
+                "wayCode": "DCEP_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "数字人民币二维码",
+                "wayType": "DCEPPAY",
+                "wayCode": "DCEP_QR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "外部订单",
+                "wayType": "OTHER",
+                "wayCode": "OUT_TRADE",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "转账",
+                "wayType": "TRANSFER",
+                "wayCode": "TRANSFER",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "银联App支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_APP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "银联企业网银支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_B2B",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "银联二维码(被扫)",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "银联Js支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_JSAPI",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "银联网关支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_PC",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "银联二维码(主扫)",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_QR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "银联手机网站支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_WAP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-04-22 17:54:34",
+                "wayName": "web统一收银台",
+                "wayType": "OTHER",
+                "wayCode": "WEB_CASHIER",
+                "productType": "PAY",
+                "updatedAt": "2024-04-22 17:54:34"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信APP",
+                "wayType": "WECHAT",
+                "wayCode": "WX_APP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信条码",
+                "wayType": "WECHAT",
+                "wayCode": "WX_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信H5",
+                "wayType": "WECHAT",
+                "wayCode": "WX_H5",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信公众号",
+                "wayType": "WECHAT",
+                "wayCode": "WX_JSAPI",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信小程序",
+                "wayType": "WECHAT",
+                "wayCode": "WX_LITE",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信扫码",
+                "wayType": "WECHAT",
+                "wayCode": "WX_NATIVE",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "云闪付条码",
+                "wayType": "YSFPAY",
+                "wayCode": "YSF_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "云闪付jsapi",
+                "wayType": "YSFPAY",
+                "wayCode": "YSF_JSAPI",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            }
+        ],
+        "hasNext": false
+    }
+}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "d327942b582842d5bae8845a66e72aac",
+    "code": 0,
+    "data": {
+        "total": 33,
+        "current": 1,
+        "records": [
+            {
+                "createdAt": "2024-01-29 16:32:20",
+                "wayName": "支付宝APP",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_APP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:20"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:20",
+                "wayName": "支付宝条码",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:20"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:20",
+                "wayName": "支付宝生活号",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_JSAPI",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:20"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "支付宝小程序",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_LITE",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "支付宝PC网站",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_PC",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "支付宝二维码",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_QR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-09-10 18:17:36",
+                "wayName": "支付宝口令",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_SHARE",
+                "productType": "PAY",
+                "updatedAt": "2024-09-10 18:17:36"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:20",
+                "wayName": "支付宝WAP",
+                "wayType": "ALIPAY",
+                "wayCode": "ALI_WAP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:20"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "智能POS支付",
+                "wayType": "OTHER",
+                "wayCode": "AUTO_POS",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "网银B2C",
+                "wayType": "OTHER",
+                "wayCode": "BANK_B2C",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "快捷收银",
+                "wayType": "OTHER",
+                "wayCode": "BANK_QUICK",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "渠道收银台",
+                "wayType": "OTHER",
+                "wayCode": "CHANNEL_CASHIER",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-04-01 14:29:52",
+                "wayName": "加密货币",
+                "wayType": "TTPAY",
+                "wayCode": "CRYPTO_ADDRESS",
+                "productType": "PAY",
+                "updatedAt": "2024-04-16 09:17:00"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "数字人民币条码",
+                "wayType": "DCEPPAY",
+                "wayCode": "DCEP_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "数字人民币二维码",
+                "wayType": "DCEPPAY",
+                "wayCode": "DCEP_QR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "外部订单",
+                "wayType": "OTHER",
+                "wayCode": "OUT_TRADE",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "转账",
+                "wayType": "TRANSFER",
+                "wayCode": "TRANSFER",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "银联App支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_APP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "银联企业网银支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_B2B",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "银联二维码(被扫)",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "银联Js支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_JSAPI",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:22",
+                "wayName": "银联网关支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_PC",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:22"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "银联二维码(主扫)",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_QR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "银联手机网站支付",
+                "wayType": "UNIONPAY",
+                "wayCode": "UP_WAP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-04-22 17:54:34",
+                "wayName": "web统一收银台",
+                "wayType": "OTHER",
+                "wayCode": "WEB_CASHIER",
+                "productType": "PAY",
+                "updatedAt": "2024-04-22 17:54:34"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信APP",
+                "wayType": "WECHAT",
+                "wayCode": "WX_APP",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信条码",
+                "wayType": "WECHAT",
+                "wayCode": "WX_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信H5",
+                "wayType": "WECHAT",
+                "wayCode": "WX_H5",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信公众号",
+                "wayType": "WECHAT",
+                "wayCode": "WX_JSAPI",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信小程序",
+                "wayType": "WECHAT",
+                "wayCode": "WX_LITE",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "微信扫码",
+                "wayType": "WECHAT",
+                "wayCode": "WX_NATIVE",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "云闪付条码",
+                "wayType": "YSFPAY",
+                "wayCode": "YSF_BAR",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            },
+            {
+                "createdAt": "2024-01-29 16:32:21",
+                "wayName": "云闪付jsapi",
+                "wayType": "YSFPAY",
+                "wayCode": "YSF_JSAPI",
+                "productType": "PAY",
+                "updatedAt": "2024-01-29 16:32:21"
+            }
+        ],
+        "hasNext": false
+    }
+}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{
+    "values_changed": {
+        "root['traceId']": {
+            "new_value": "7a2546f25b96433ca2ad99d5410f80b8",
+            "old_value": "d327942b582842d5bae8845a66e72aac"
+        }
+    }
+}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title=https://mch.ylbhd.com/api/payOrder/count><a href="#">https://mch.ylbhd.com/api/payOrder/count</a></p></th>
+        <td style="text-align:center;width:6em;">GET</td>
+        
+          <td style="text-align:center;width:6em;color:limegreen;">200</td>
+        
+        <td style="text-align:center;width:10em;">0.17674 ms</td>
+        <td>
+          
+            <a class="btn-group-vertical" href="#popup_log_3" style="color:red;">data</a>
+          
+            <div id="popup_log_3" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "3acb3fd5ea7046c7985bd665936e8f0f",
+    "code": 0,
+    "data": {
+        "mchFeeAmount": 0,
+        "refundCount": 0,
+        "failPayCount": 0,
+        "fee": 0,
+        "allCount": 0,
+        "failPayAmount": 0,
+        "allPayAmount": 0,
+        "payAmount": 0,
+        "allPayCount": 0,
+        "allAmount": 0,
+        "round": 0.0,
+        "refundFeeAmount": 0,
+        "payCount": 0,
+        "refundAmount": 0
+    }
+}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "5447f40f1d334e418a060eabd5a9f362",
+    "code": 0,
+    "data": {
+        "mchFeeAmount": 0,
+        "refundCount": 0,
+        "failPayCount": 0,
+        "fee": 0,
+        "allCount": 0,
+        "failPayAmount": 0,
+        "allPayAmount": 0,
+        "payAmount": 0,
+        "allPayCount": 0,
+        "allAmount": 0,
+        "round": 0.0,
+        "refundFeeAmount": 0,
+        "payCount": 0,
+        "refundAmount": 0
+    }
+}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{
+    "values_changed": {
+        "root['traceId']": {
+            "new_value": "3acb3fd5ea7046c7985bd665936e8f0f",
+            "old_value": "5447f40f1d334e418a060eabd5a9f362"
+        }
+    }
+}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title=https://mch.ylbhd.com/api/refundOrder/count><a href="#">https://mch.ylbhd.com/api/refundOrder/count</a></p></th>
+        <td style="text-align:center;width:6em;">GET</td>
+        
+          <td style="text-align:center;width:6em;color:limegreen;">200</td>
+        
+        <td style="text-align:center;width:10em;">0.15658 ms</td>
+        <td>
+          
+            <a class="btn-group-vertical" href="#popup_log_4" style="color:red;">data</a>
+          
+            <div id="popup_log_4" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "f0cce12187ca49fea10fa41e2d19ebb9",
+    "code": 0,
+    "data": {
+        "refundCount": 0,
+        "allPayAmount": 0,
+        "payAmount": 0,
+        "allAmount": 0,
+        "round": 0.0,
+        "fee": 0,
+        "refundFeeAmount": 0,
+        "payCount": 0,
+        "allCount": 0,
+        "refundAmount": 0
+    }
+}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "af40fd0d141740eea5300e1f96c329ff",
+    "code": 0,
+    "data": {
+        "refundCount": 0,
+        "allPayAmount": 0,
+        "payAmount": 0,
+        "allAmount": 0,
+        "round": 0.0,
+        "fee": 0,
+        "refundFeeAmount": 0,
+        "payCount": 0,
+        "allCount": 0,
+        "refundAmount": 0
+    }
+}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{
+    "values_changed": {
+        "root['traceId']": {
+            "new_value": "f0cce12187ca49fea10fa41e2d19ebb9",
+            "old_value": "af40fd0d141740eea5300e1f96c329ff"
+        }
+    }
+}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title=https://mch.ylbhd.com/api/refundOrder><a href="#">https://mch.ylbhd.com/api/refundOrder</a></p></th>
+        <td style="text-align:center;width:6em;">GET</td>
+        
+          <td style="text-align:center;width:6em;color:limegreen;">200</td>
+        
+        <td style="text-align:center;width:10em;">0.27269 ms</td>
+        <td>
+          
+            <a class="btn-group-vertical" href="#popup_log_5" style="color:red;">data</a>
+          
+            <div id="popup_log_5" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "a5a79525548145c499a5733ba9845868",
+    "code": 0,
+    "data": {
+        "total": 0,
+        "current": 1,
+        "records": [],
+        "hasNext": false
+    }
+}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "d00f0987773e4ebe91e877358387ad1a",
+    "code": 0,
+    "data": {
+        "total": 0,
+        "current": 1,
+        "records": [],
+        "hasNext": false
+    }
+}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{
+    "values_changed": {
+        "root['traceId']": {
+            "new_value": "a5a79525548145c499a5733ba9845868",
+            "old_value": "d00f0987773e4ebe91e877358387ad1a"
+        }
+    }
+}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title=https://mch.ylbhd.com/api/transferOrders/count><a href="#">https://mch.ylbhd.com/api/transferOrders/count</a></p></th>
+        <td style="text-align:center;width:6em;">GET</td>
+        
+          <td style="text-align:center;width:6em;color:limegreen;">200</td>
+        
+        <td style="text-align:center;width:10em;">0.14812 ms</td>
+        <td>
+          
+            <a class="btn-group-vertical" href="#popup_log_6" style="color:red;">data</a>
+          
+            <div id="popup_log_6" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "86b3a9c3992e4cd7b96b4af807d88c8f",
+    "code": 0,
+    "data": {
+        "transAmount": 0,
+        "mchOrderFeeAmount": 0,
+        "transCount": 0
+    }
+}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "cbed276dd2de44b3ae211ca6dd012fa3",
+    "code": 0,
+    "data": {
+        "transAmount": 0,
+        "mchOrderFeeAmount": 0,
+        "transCount": 0
+    }
+}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{
+    "values_changed": {
+        "root['traceId']": {
+            "new_value": "86b3a9c3992e4cd7b96b4af807d88c8f",
+            "old_value": "cbed276dd2de44b3ae211ca6dd012fa3"
+        }
+    }
+}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title=https://mch.ylbhd.com/api/transferOrders/queryCountOrder><a href="#">https://mch.ylbhd.com/api/transferOrders/queryCountOrder</a></p></th>
+        <td style="text-align:center;width:6em;">GET</td>
+        
+          <td style="text-align:center;width:6em;color:limegreen;">200</td>
+        
+        <td style="text-align:center;width:10em;">0.14712 ms</td>
+        <td>
+          
+            <a class="btn-group-vertical" href="#popup_log_7" style="color:red;">data</a>
+          
+            <div id="popup_log_7" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "d56bf04ddc984f61a68de903f822d023",
+    "code": 0,
+    "data": {
+        "mchName": "模拟商户",
+        "orderNum": 0,
+        "mchNo": "M1706584710"
+    }
+}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "72a72e33b995426ba134f1d9c4d4f97d",
+    "code": 0,
+    "data": {
+        "mchName": "模拟商户",
+        "orderNum": 0,
+        "mchNo": "M1706584710"
+    }
+}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{
+    "values_changed": {
+        "root['traceId']": {
+            "new_value": "d56bf04ddc984f61a68de903f822d023",
+            "old_value": "72a72e33b995426ba134f1d9c4d4f97d"
+        }
+    }
+}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title=https://mch.ylbhd.com/api/transferOrders><a href="#">https://mch.ylbhd.com/api/transferOrders</a></p></th>
+        <td style="text-align:center;width:6em;">GET</td>
+        
+          <td style="text-align:center;width:6em;color:limegreen;">200</td>
+        
+        <td style="text-align:center;width:10em;">0.16371 ms</td>
+        <td>
+          
+            <a class="btn-group-vertical" href="#popup_log_8" style="color:red;">data</a>
+          
+            <div id="popup_log_8" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "d26cea0f49fc4f85ac413f88d9791cee",
+    "code": 0,
+    "data": {
+        "total": 0,
+        "current": 1,
+        "records": [],
+        "hasNext": false
+    }
+}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{
+    "msg": "SUCCESS",
+    "traceId": "8f480d88ba1944d794bd42b3953b9c03",
+    "code": 0,
+    "data": {
+        "total": 0,
+        "current": 1,
+        "records": [],
+        "hasNext": false
+    }
+}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{
+    "values_changed": {
+        "root['traceId']": {
+            "new_value": "d26cea0f49fc4f85ac413f88d9791cee",
+            "old_value": "8f480d88ba1944d794bd42b3953b9c03"
+        }
+    }
+}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    
+    </tbody>
+  </table>
+</body>

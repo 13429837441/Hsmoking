@@ -1,0 +1,367 @@
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/2122.png">
+  <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+  <title>Cats Report</title>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <style>
+    body {
+      background-color: #f2f2f2;
+      color: #333;
+      margin: 0 auto;
+      width: 960px;
+    }
+    #summary, #details {
+      width: 960px;
+    }
+    #summary th {
+      background-color: skyblue;
+      padding: 5px 12px;
+    }
+    #summary td {
+      background-color: lightblue;
+      text-align: center;
+      padding: 4px 8px;
+    }
+    #details th {
+      background-color: skyblue;
+      padding: 5px 12px;
+    }
+    #details td {
+      background-color: lightblue;
+      padding: 5px 12px;
+    }
+    #details .detail {
+      background-color: lightgrey;
+      font-size: smaller;
+      padding: 5px 10px;
+      text-align: center;
+    }
+    #details .success {
+      background-color: greenyellow;
+    }
+    #details .error {
+      background-color: red;
+    }
+    #details .failure {
+      background-color: salmon;
+    }
+    #details .skipped {
+      background-color: gray;
+    }
+
+    .button {
+      font-size: 1em;
+      padding: 6px;
+      width: 4em;
+      text-align: center;
+      background-color: #06d85f;
+      border-radius: 20px/50px;
+      cursor: pointer;
+      transition: all 0.3s ease-out;
+    }
+    a.button{
+      color: gray;
+      text-decoration: none;
+    }
+    .button:hover {
+      background: #2cffbd;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.7);
+      transition: opacity 500ms;
+      visibility: hidden;
+      opacity: 0;
+    }
+    .overlay:target {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .popup {
+      margin: 30px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 5px;
+      width: 40%;
+      position: relative;
+      transition: all 5s ease-in-out;
+    }
+
+    .popup h2 {
+      margin-top: 0;
+      color: #333;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+    .popup .close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      transition: all 200ms;
+      font-size: 30px;
+      font-weight: bold;
+      text-decoration: none;
+      color: #333;
+    }
+    .popup .close:hover {
+      color: #06d85f;
+    }
+    .popup .content {
+      max-height: 30%;
+      overflow: auto;
+      text-align: left;
+    }
+
+    .line-limit-length {
+      max-width: 500px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media screen and (max-width: 700px) {
+      .box {
+        width: 70%;
+      }
+      .popup {
+        width: 70%;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <h1>Test Report: {{html_report_name}}</h1>
+
+  <h3>执行情况</h3>
+  <div id="container" style="height: 50%;padding-top: 20px"></div>
+
+  <script type="text/javascript">
+    var dom = document.getElementById("container");
+    var myChart = echarts.init(dom);
+    var app = {};
+
+    var option;
+    option = {
+        title: {
+            text: '测试执行情况饼图',
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'item'
+        },
+        series: [
+            {
+                name: '次数',
+                type: 'pie',
+                radius: '50%',
+                data: [
+                    {value: {{successes}}, name: '成功', itemStyle: {color:'#34e25c'}},
+                    {value: {{failures}}, name: '失败', itemStyle: {color:'#ee4e43'}},
+                    {value: {{skipped}}, name: '跳过', itemStyle: {color:'#9f9a9a'}}
+                ],
+                emphasis: {
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                }
+            }
+        ]
+    };
+
+    if (option && typeof option === 'object') {
+        myChart.setOption(option);
+    }
+
+  </script>
+
+  <h3>接口响应时间</h3>
+  <div id="container_bar" style="height: 50%;width:100%;padding-top: 20px"></div>
+
+  <script type="text/javascript">
+    var dom = document.getElementById("container_bar");
+    var myChart = echarts.init(dom);
+    var app = {};
+
+    var option;
+    option = {
+      backgroundColor:'#323a5e',//背景色
+      tooltip: {
+            trigger: 'axis',
+            axisPointer: { // 坐标轴指示器，坐标轴触发有效
+              type: 'shadow' // 默认为直线，可选为：'line' | 'shadow'
+            }
+          },
+      grid: {
+          left: '10%',
+          right: '10%',
+          bottom: '20%',
+          top:'20%',
+          containLabel: true//是否包含刻度尺，默认不包含
+      },
+      legend:{//图例组件
+            data: ['录制接口', '回放接口'],
+            right: 'center',
+            top:'10%',
+            textStyle: {
+              color: "#fff"
+            },
+            itemWidth: 12,//图例组件宽度
+            itemHeight: 10,//图例组件高度
+          itemGap: 35//每项之间的间隔
+      },
+      xAxis:{
+            type: 'category',
+            data: {{apiNameList}},
+            axisLine: {
+              lineStyle: {
+                color: 'white'
+              }
+            },
+          },
+      yAxis:{
+          type: 'value',
+          max:'3',//纵坐标轴的最大刻度
+          axisLine: {
+              show: false,//不显示纵坐标轴
+              lineStyle: {
+                color: 'white'
+              }
+            },
+          splitLine: {
+              show: true,
+              lineStyle: {
+                color: 'rgba(255,255,255,0.3)'
+              }
+            },
+          axisLabel: {}
+      },
+      series: [
+          {
+            name: '录制接口',
+            type: 'bar',
+            barWidth: '15%',
+            itemStyle: {
+              normal: {
+                  color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                      offset: 0,
+                      color: '#fccb05'
+                  }, {
+                      offset: 1,
+                      color: '#f5804d'
+                  }]),
+                  barBorderRadius: 12,
+              },
+            },
+            data: {{apiTimeOldList}},
+          },
+          {
+            name: '回放接口',
+            type: 'bar',
+            barWidth: '15%',
+            itemStyle: {
+              normal: {
+                  color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                      offset: 0,
+                      color: '#8bd46e'
+                  }, {
+                      offset: 1,
+                      color: '#09bcb7'
+                  }]),
+                  barBorderRadius: 11,
+              }
+            },
+             data: {{apiTimeList}},
+          }],
+      dataZoom: [//滑动组件
+              {
+              type:"slider",//水平滑块，选择区间
+              show: true,
+              height: 12,
+              xAxisIndex: [0],
+              bottom:'8%',
+              start: 10,
+              end: 90,
+              handleIcon: 'path://M306.1,413c0,2.2-1.8,4-4,4h-59.8c-2.2,0-4-1.8-4-4V200.8c0-2.2,1.8-4,4-4h59.8c2.2,0,4,1.8,4,4V413z',
+              handleSize: '110%',
+              handleStyle:{
+              color:"#d3dee5",
+            },
+            textStyle:{ color:"#fff"},
+            borderColor:"#90979c"
+          },
+          {
+            type: "inside",//纵向滑动,缩放
+            show: true,
+            height: 15,
+            start: 1,
+            end: 35
+          }
+      ],
+    };
+
+    if (option && typeof option === 'object') {
+        myChart.setOption(option);
+    }
+
+
+  </script>
+
+
+  <h3>Details</h3>
+  <table class="table table-bordered table-dark">
+    <thead>
+      <tr>
+        <th scope="col">Url Name</th>
+        <th scope="col">Method</th>
+        <th scope="col">Status</th>
+        <th scope="col">Response Time</th>
+        <th scope="col">Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for record in records %}
+      <tr>
+        <th scope="row" style="width:5em;"><p class="line-limit-length" title={{record[4]}}><a href="#">{{record[4]}}</a></p></th>
+        <td style="text-align:center;width:6em;">{{record[7]}}</td>
+        {% if record[8]=='200' %}
+          <td style="text-align:center;width:6em;color:limegreen;">{{record[8]}}</td>
+        {% else %}
+          <td style="text-align:center;width:6em;color:red;">{{record[8]}}</td>
+        {% endif %}
+        <td style="text-align:center;width:10em;">{{record[10]}} ms</td>
+        <td>
+          {% if RunCodeList[loop.index-1]==1 %}
+            <a class="btn-group-vertical" href="#popup_log_{{loop.index}}" style="color:limegreen;">data</a>
+          {% elif RunCodeList[loop.index-1]==0 %}
+            <a class="btn-group-vertical" href="#popup_log_{{loop.index}}" style="color:red;">data</a>
+          {% else %}
+            <a class="btn-group-vertical" href="#popup_log_{{loop.index}}" style="color:gray;">data</a>
+          {% endif %}
+            <div id="popup_log_{{loop.index}}" class="overlay">
+              <div class="popup">
+                <h2>期望数据</h2>
+                <a class="close" href="#">&times;</a>
+                <div class="content"><pre>{{ record[11] | safe }}</pre></div>
+                <h2>实际数据</h2>
+                <div class="content"><pre>{{ record[12] | safe }}</pre></div>
+                <h2>对比结果</h2>
+                <div class="content"><pre style="color:red;">{{ record[13] | safe }}</pre></div>
+              </div>
+            </div>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</body>
