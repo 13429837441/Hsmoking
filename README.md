@@ -13,3 +13,4 @@
 |  streamlit-multipage| 0.0.18 |
 |  requests| 2.31.0 |
 
+可pyinstaller打包
